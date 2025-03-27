@@ -1,0 +1,113 @@
+from tkinter import *
+import numpy as np
+import cv2
+from PIL import Image, ImageTk, ImageChops
+
+from skimage.metrics import structural_similarity as ssim
+from skimage import io, color
+
+# Create an instance of tkinter frame
+win = Tk()
+win.geometry("400x800")
+# Load the image
+img = cv2.imread(r"C:\Users\Justas\Downloads\iloveimg-resized\image3 (1).jpeg")
+
+boxes_cooradinates = []
+one_box = []
+
+
+def create_one_box():
+    x1 = one_box[0][0]
+    y1 = one_box[0][1]
+    x2 = one_box[1][0]
+    y2 = one_box[1][1]
+    print(f"x1:{x1} x2:{x2} y1:{y1} y2:{y2}")
+    if one_box[0][0] != False or one_box[1][1] != False:
+        rectangle_1 = canvas.create_rectangle(
+            x1, y1, x2, y2, outline="white"
+        )  # galima gauti kuri keturkampis
+        list_of_coordinates = [x1, y1, x2, y2]
+        boxes_cooradinates.append(
+            list_of_coordinates
+        )  # idedam koordinates i pagrindini lista ir trinamas laikinas one_box listas. Kad butu vietos kitam
+        one_box.clear()
+
+
+def compare_Box():
+    print(boxes_cooradinates[0])
+    x1 = boxes_cooradinates[0][0]
+    y1 = boxes_cooradinates[0][1]
+    x2 = boxes_cooradinates[0][2]
+    y2 = boxes_cooradinates[0][3]
+    height_y = y2 - y1
+    width_x = x2 - x1
+    print(height_y)
+    print(width_x)
+
+    roi = img[(y1 - 100) : (y1 - 100) + height_y, (x1 - 100) : (x1 - 100) + width_x]
+    cv2.imshow("name", roi)
+    boxes_cooradinates.clear()  # laikina pagrindinio listo vieta trinama
+    img2 = cv2.imread(r"C:\Users\Justas\Downloads\iloveimg-resized\image4 (1).jpeg")
+
+    roi2 = img2[(y1 - 100) : (y1 - 100) + height_y, (x1 - 100) : (x1 - 100) + width_x]
+    cv2.imshow("name1", roi2)
+
+    # pic1_cropped = img[100:100, 200:100]
+    # cv2.imshow("cropped", pic1_cropped)
+    # pic2_cropped = img2[100:100, 200:100]
+    # cv2.imshow("cropped", pic2_cropped)
+
+    # gera funkcija bet yra klaidu del splavos
+    #    diff = cv2.absdiff(roi, roi2)
+    #    total_difference = np.sum(diff)
+    #    print(total_difference)
+    #    if total_difference > 30000:
+    #        rectangle_1 = canvas.create_rectangle(x1, y1, x2, y2, outline="red")
+    #    else:
+    #        rectangle_1 = canvas.create_rectangle(x1, y1, x2, y2, outline="green")
+
+    gray_image1 = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    gray_image2 = cv2.cvtColor(roi2, cv2.COLOR_BGR2GRAY)
+    diff2 = cv2.absdiff(gray_image1, gray_image2)
+    total_difference2 = np.sum(diff2)
+    print(f" Grey scale number:   {total_difference2}")
+
+    if total_difference2 > 16000:
+        rectangle_1 = canvas.create_rectangle(x1, y1, x2, y2, outline="red")
+    else:
+        rectangle_1 = canvas.create_rectangle(x1, y1, x2, y2, outline="green")
+
+    pass
+
+
+def my_callback(event):
+    # l1.config(text="Clicked at : " + str(event.x) + "," + str(event.y))
+    # print(f"{event.x} {event.y}")
+    if (event.x > 100 and event.x < 900) and (event.y > 100 and event.y < 900):
+        coordinates_to_return = (event.x, event.y)
+        print(f"{event.x} {event.y}")
+        one_box.append(coordinates_to_return)  # issaugomos koordinates, vienos dezes
+
+
+# Rearrange colors
+blue, green, red = cv2.split(img)
+img12 = cv2.merge((red, green, blue))
+im = Image.fromarray(img12)
+imgtk = ImageTk.PhotoImage(image=im)
+
+
+canvas = Canvas(win, width=700, height=900)
+canvas.create_image(100, 100, anchor=NW, image=imgtk)
+canvas.pack()
+
+
+quitButton = Button(win, text="New box", command=create_one_box)
+compareButton = Button(win, text="Compare", command=compare_Box)
+
+
+# Create a Label to display the image
+# Label(win, image=imgtk).pack()
+quitButton.pack()
+compareButton.pack()
+win.bind("<Button-1>", my_callback)
+win.mainloop()
